@@ -13,7 +13,8 @@
  * 常用环境变量：
  *   ROOM_ID        B站直播间号（短号或长号都行）
  *   REST_TOKEN     TShock REST token（默认读 ../.rest_token）
- *   MAX_PER_MIN    普通弹幕每分钟最多转发多少条（默认 12）
+ *   MAX_PER_MIN    普通弹幕每分钟最多转发多少条（默认 12，填 0 = 不限量）
+ *   SEND_INTERVAL_MS 不限量时两条之间的最小间隔毫秒（默认 150，防刷爆 REST）
  *   PREFIX         游戏内聊天前缀（默认 "[弹幕]"）
  *   CMD_ENABLE     是否开启弹幕指令刷怪（默认 1，0 关闭）
  *   CMD_PREFIX     指令前缀（默认 "!"，全角"！"也认）
@@ -45,7 +46,13 @@ const CFG = {
       try { return fs.readFileSync(path.join(BASE, '..', '.rest_token'), 'utf8').trim(); }
       catch { return ''; }
     })(),
-  maxPerMin: parseInt(process.env.MAX_PER_MIN || '12', 10),
+  // 0 = 不限量（此时用 sendIntervalMs 做最小间隔，避免把 REST 打挂）
+  maxPerMin: (() => {
+    const n = parseInt(process.env.MAX_PER_MIN ?? '12', 10);
+    if (!Number.isFinite(n)) return 12;
+    return n <= 0 ? 0 : n;
+  })(),
+  sendIntervalMs: Math.max(20, parseInt(process.env.SEND_INTERVAL_MS || '150', 10) || 150),
   prefix: process.env.PREFIX || '[弹幕]',
   minLen: parseInt(process.env.MIN_LEN || '1', 10),
   maxLen: parseInt(process.env.MAX_LEN || '50', 10),
@@ -218,14 +225,21 @@ async function sendToGame(text) {
   }
 }
 
+// 发送节拍：限量模式按 60s/上限 均摊；不限量模式用 SEND_INTERVAL_MS 扫积压
+function pumpIntervalMs() {
+  if (CFG.maxPerMin > 0) return Math.max(200, Math.ceil(60000 / CFG.maxPerMin));
+  return CFG.sendIntervalMs;
+}
+
 function pump() {
-  // 每分钟窗口重置
+  // 每分钟窗口重置（不限量时不需要，但保留统计意义）
   if (Date.now() - minuteStart >= 60000) {
     minuteStart = Date.now();
     sentThisMinute = 0;
   }
   if (queue.length === 0) return;
-  if (sentThisMinute >= CFG.maxPerMin) {
+  // maxPerMin === 0 → 不限量：不丢弃积压，靠 SEND_INTERVAL_MS 节流
+  if (CFG.maxPerMin > 0 && sentThisMinute >= CFG.maxPerMin) {
     queue.length = 0; // 超过速率限制，丢弃积压
     return;
   }
@@ -249,8 +263,10 @@ const cmdStats = {
 
 /** 清理单个参数：去掉能掺进 TShock 命令行/URL 的字符，限制长度 */
 function cleanToken(raw, maxLen = 24) {
+  // 保留 <>：Terraria 有「<传奇>夏卜卜」这种带尖括号的昵称，去掉就找不到人。
+  // 危险字符（分隔符/引号/管道/控制符）仍然清掉。
   return String(raw)
-    .replace(/[\\/\u0000-\u001f;&=?#'"`<>|]/g, '')
+    .replace(/[\\/\u0000-\u001f;&=?#'"`|]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLen);
@@ -527,7 +543,7 @@ async function connect() {
       return;
     }
 
-    if (queue.length > 50) return; // 防止积压
+    if (queue.length > 500) return; // 防止积压（不限量时放宽）
 
     // 格式：[弹幕] 用户名: 内容
     queue.push(`${user}: ${text}`);
@@ -545,7 +561,7 @@ if (!CFG.restToken) {
   process.exit(1);
 }
 
-log(`启动弹幕桥接 | 房间=${CFG.roomId} | 每分钟上限=${CFG.maxPerMin} | 前缀=${CFG.prefix} | 登录态=${CFG.sessdata ? '已带 SESSDATA' : '匿名'}`);
+log(`启动弹幕桥接 | 房间=${CFG.roomId} | 每分钟上限=${CFG.maxPerMin > 0 ? CFG.maxPerMin + ' 条' : '不限量'} | 节拍=${pumpIntervalMs()}ms | 前缀=${CFG.prefix} | 登录态=${CFG.sessdata ? '已带 SESSDATA' : '匿名'}`);
 log(`刷怪指令 | ${CMD.enable ? '已开启' : '已关闭'} | 前缀=${CMD.prefix} | 指令词=${CMD.words.join('/')} | 每条上限=${CMD.maxAmount}只 | 全服${CMD.maxPerMin}/分 | 冷却${CMD.userCooldown}s | 舰长门槛=${CMD.minGuard} 粉丝牌门槛=${CMD.minMedal}`);
 
 // 自检模式：不连 B站，直接拿一条"假弹幕"跑一遍指令链路，用来验证 REST/插件是否通
@@ -565,7 +581,7 @@ if (process.env.SELFTEST_CMD) {
 } else {
   probePlugin();
   setInterval(() => { if (!pluginReady) probePlugin(); }, 45000);   // 插件后装的：45 秒内自动接管
-  setInterval(pump, 5000); // 每 5 秒发一条，天然限速
+  setInterval(pump, pumpIntervalMs()); // 限速模式=60000/maxPerMin，不限量=sendIntervalMs
   setInterval(() => {
     if (danmakuCount > 0) log(`统计：已接收 ${danmakuCount} 条弹幕，队列 ${queue.length}，节点[${hostIndex}]，指令 成功${cmdStats.ok}/失败${cmdStats.fail}`);
   }, 60000);

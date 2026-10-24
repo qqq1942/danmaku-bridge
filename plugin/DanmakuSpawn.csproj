@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>DanmakuSpawn</AssemblyName>
+    <RootNamespace>DanmakuSpawn</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- TShock 自己已经在跑 runtime，插件不要带任何依赖 DLL -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+  </ItemGroup>
+
+  <!-- 引用集来自运行中的容器：docker cp tshock:/server/bin/. refs/ -->
+  <ItemGroup>
+    <Reference Include="TShockAPI">
+      <HintPath>refs/TShockAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TerrariaServer">
+      <HintPath>refs/TerrariaServer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="OTAPI">
+      <HintPath>refs/OTAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="OTAPI.Runtime">
+      <HintPath>refs/OTAPI.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="HttpServer">
+      <HintPath>refs/HttpServer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ModFramework">
+      <HintPath>refs/ModFramework.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

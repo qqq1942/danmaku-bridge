@@ -9,3 +9,14 @@ config.env
 
 # 依赖
 node_modules/
+
+# 插件编译输入/输出（有版权或可再生成）
+plugin/refs/*.dll
+plugin/refs/*.pdb
+plugin/refs/*.xml
+plugin/bin/
+plugin/obj/
+*.bak
+*.bak2
+*.bak3
+*.bak-*
