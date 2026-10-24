@@ -15,7 +15,7 @@ namespace DanmakuSpawn
 	/// 提供一条命令，宿主机的弹幕桥接脚本通过 REST /v3/server/rawcmd 调用：
 	///     /dspawn &lt;怪物&gt; [数量] [玩家] [@观众名]
 	/// 例：
-	///     /dspawn 僵尸 3 饺子喵喵 @白嫖怪
+	///     /dspawn 僵尸 3 示例玩家 @白嫖怪
 	///
 	/// 设计要点：
 	///   1) 命令只做校验 + 入队，真正的 NewNPC 在 GamePostUpdate（主线程）里执行，
@@ -459,7 +459,7 @@ namespace DanmakuSpawn
 			if (!found)
 			{
 				// 3b) 「/dspawn <玩家名>」——怪名解析失败时，退一步当成在线玩家：
-				//     随机刷在 TA 身边。这样观众直接打「!刷怪 饺子喵喵」就有效。
+				//     随机刷在 TA 身边。这样观众直接打「!刷怪 示例玩家」就有效。
 				var pTokens = new List<string>(tokens);
 				int pAmount = Math.Clamp(_cfg.RandomAmount, 1, _cfg.MaxAmount);
 				if (pTokens.Count > 1 && int.TryParse(pTokens[pTokens.Count - 1], out int pCount))
@@ -1005,11 +1005,11 @@ namespace DanmakuSpawn
 		{
 			ply.SendInfoMessage("[刷怪] /dspawn            —— 随机一只安全怪，刷在随机在线玩家身边");
 			ply.SendInfoMessage("[刷怪] /dspawn <怪物> [数量] [玩家] [@观众名]  —— 指定刷怪");
-			ply.SendInfoMessage("[刷怪] /dspawn <玩家> [数量]  —— 只报玩家名：在他身边刷随机怪（观众可直接 !刷怪 饺子喵喵）");
-			ply.SendInfoMessage("[刷怪] 例：/dspawn 僵尸 3 饺子喵喵 @白嫖怪");
+			ply.SendInfoMessage("[刷怪] /dspawn <玩家> [数量]  —— 只报玩家名：在他身边刷随机怪（观众可直接 !刷怪 示例玩家）");
+			ply.SendInfoMessage("[刷怪] 例：/dspawn 僵尸 3 示例玩家 @白嫖怪");
 			ply.SendInfoMessage("[刷怪] 玩家可写昵称/账号/在线序号，@spawn 表示世界出生点，省略=配置的默认目标");
 			ply.SendInfoMessage("[刷怪] /dspawn 3 —— 纯数字就是数量：随机刷 3 只（数字 >10 才当作 NPC ID）");
-			ply.SendInfoMessage("[刷怪] /dspawn 3 饺子喵喵 —— 3 只随机怪，刷在指定玩家身边");
+			ply.SendInfoMessage("[刷怪] /dspawn 3 示例玩家 —— 3 只随机怪，刷在指定玩家身边");
 			ply.SendInfoMessage("[刷怪] /dspawn 自检 —— 立刻在自己脚下刷一只怪并回报同步结果");
 			ply.SendInfoMessage("[刷怪] /dspawn list [页] 中文别名 | /dspawn pool [页] 随机池 | /dspawn status | /dspawn reload");
 		}

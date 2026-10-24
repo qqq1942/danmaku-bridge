@@ -3,7 +3,7 @@
 把 B 站直播间的弹幕搬进泰拉瑞亚服务器：
 
 - **弹幕 → 游戏聊天栏**：观众说什么，服务器里就显示什么
-- **弹幕 → 刷怪**：观众打一句 `!刷怪 僵尸 3 饺子喵喵`，服务器就在指定玩家身边生成 3 只僵尸
+- **弹幕 → 刷怪**：观众打一句 `!刷怪 僵尸 3 示例玩家`，服务器就在指定玩家身边生成 3 只僵尸
 
 **玩家端零安装** —— 不装模组、不用改客户端，原版 Terraria 就能看到怪、看到弹幕。
 全部在服务端完成：WebSocket 收弹幕 → TShock REST API → 服务端插件生成 NPC。
@@ -42,6 +42,27 @@ B站直播间 (WebSocket + WBI 签名)
 - [常见问题](#常见问题)
 - [安全须知](#安全须知)
 - [License](#license)
+
+---
+
+## 项目结构
+
+```
+danmaku-bridge/
+├── danmaku-bridge.js        # 主程序：B站 WebSocket → TShock REST（零依赖）
+├── run.sh                   # start / stop / restart / status
+├── config.env.example       # 配置模板
+├── push-to-github.sh        # 推送助手（token 不落盘）
+├── 配置文档.md               # 配置项详解
+├── plugin/                  # 服务端插件 DanmakuSpawn（C# / TShock 6.x）
+│   ├── src/                 # 插件源码
+│   ├── build.sh             # 编译 + 部署
+│   └── refs/README.md       # 编译所需程序集的获取方法（有版权，不入库）
+└── ops/                     # 运维脚本
+    ├── watchdog.sh          # 健康巡检 + 自动恢复
+    ├── restart.sh           # 安全重启（先存档再停服）
+    └── watchdog.conf.example
+```
 
 ---
 
@@ -102,16 +123,16 @@ cd .. && docker compose restart tshock
 打开直播间，**地址栏 `live.bilibili.com/` 后面那串数字就是房间号**：
 
 ```
-https://live.bilibili.com/23343237
+https://live.bilibili.com/123456
                          ^^^^^^^ 这就是 ROOM_ID
 ```
 
 ```ini
 # config.env
-ROOM_ID=23343237
+ROOM_ID=123456
 ```
 
-**短号 / 长号都支持**。B 站主播在后台看到的是短号（如 `23343237`），而接口里用长号（如 `5440`），桥接两种都能处理——填你地址栏看到的那个就行。
+**短号 / 长号都支持**。B 站主播在后台看到的是短号（如 `123456`），而接口里用长号（如 `5440`），桥接两种都能处理——填你地址栏看到的那个就行。
 
 > 房间号和 cookie 所属账号可以不匹配：任何账号的 cookie 都可以去听任何公开直播间的弹幕。
 
@@ -279,12 +300,12 @@ BOSS 黑名单是插件的硬限制，观众写什么都不可能刷出克苏鲁
 |---|---|
 | `!刷怪` | 1 只随机怪，刷在随机在线玩家身边 |
 | `!刷怪 3` | **纯数字 = 数量**：3 只随机怪 |
-| `!刷怪 3 饺子喵喵` | 3 只随机怪，刷在指定玩家身边 |
+| `!刷怪 3 示例玩家` | 3 只随机怪，刷在指定玩家身边 |
 | `!刷怪 僵尸 3` | 3 只僵尸 |
-| `!刷怪 僵尸 3 饺子喵喵` | 3 只僵尸刷在指定玩家身边 |
-| `!刷怪 饺子喵喵` | 只报玩家名：在她身边刷随机怪 |
+| `!刷怪 僵尸 3 示例玩家` | 3 只僵尸刷在指定玩家身边 |
+| `!刷怪 示例玩家` | 只报玩家名：在她身边刷随机怪 |
 
-游戏内会广播：`【弹幕】某观众 召唤了 3 只 Zombie 在 饺子喵喵 附近！`
+游戏内会广播：`【弹幕】某观众 召唤了 3 只 Zombie 在 示例玩家 附近！`
 
 **数字解析规则**：`1`–`10` 之间的纯数字当作**数量**，超过 10 才当作 NPC 数字 ID。所以 `!刷怪 3` 是 3 只怪，不是「怪物 #3」。
 
@@ -377,7 +398,7 @@ TShock 默认分组继承链：`guest → default → vip → newadmin → admin
 |---|---|
 | `/dspawn` | 随机 1 只安全怪 + 随机在线玩家 |
 | `/dspawn 3` | 3 只随机怪 |
-| `/dspawn 僵尸 3 饺子喵喵` | 3 只僵尸刷在该玩家身边 |
+| `/dspawn 僵尸 3 示例玩家` | 3 只僵尸刷在该玩家身边 |
 | `/dspawn @spawn 僵尸` | 刷在世界出生点 |
 | `/dspawn 自检` | 在自己脚下刷一只并回报 NPC 数量（排障用） |
 | `/dspawn status` | 开关 / 队列 / 已刷 / 被拒 / 限速 / 诊断 |
@@ -410,6 +431,26 @@ tail -f bridge.log
 @reboot       /path/to/danmaku-bridge/run.sh start
 */5  * * * *  /path/to/danmaku-bridge/run.sh start   # 已在跑则静默退出
 ```
+
+### 安全重启（重要）
+
+Terraria 的世界**只在内存里**，不存盘就停服 = 回档。`ops/restart.sh` 把这件事做成了流水线：
+
+```bash
+cp ops/restart.sh ops/watchdog.sh ~/terraria/
+cp ops/watchdog.conf.example ~/terraria/watchdog.conf    # 填 token / QQ / 域名
+~/terraria/restart.sh            # 只预检，什么都不动
+~/terraria/restart.sh --yes      # 广播 → QQ → 倒计时 → 存档校验 → 停 → 启 → 验证
+```
+
+四道闸：`/worlds` 挂载校验 → 存档后 mtime 必须真的前进 → 停服前挂维护标记 →
+启动后校验监听/REST/世界加载。任何一步不过就中止，不会带着未保存的世界停服。
+
+`ops/watchdog.sh` 另有**存档落盘**检查：自动备份比存档文件新超过
+`WORLD_STALE_MIN` 分钟就 QQ 告警（此时重启必然回档，所以只告警不重启）。
+
+> 看门狗**从不主动连接 7777 游戏端口**——实测裸 TCP 连接会在 20~30 次后让
+> Terraria 的监听线程死掉，反而制造故障。它改用 `/proc/net/tcp` 读状态。
 
 ---
 

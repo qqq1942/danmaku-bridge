@@ -20,7 +20,7 @@ B站弹幕  "/刷怪"
         NPC.NewNPC(在目标玩家附近找一个能落脚的空地)
             │
             ▼
-        全服聊天栏：【弹幕】白嫖怪 召唤了 1 只 Mummy 在 饺子喵喵 附近！
+        全服聊天栏：【弹幕】白嫖怪 召唤了 1 只 Mummy 在 示例玩家 附近！
 ```
 
 ## 为什么需要插件
@@ -90,9 +90,9 @@ docker logs --tail 40 tshock | grep DanmakuSpawn
 | `/dspawn` | 随机一只安全怪，刷在随机一个在线玩家身边（不会拆方块、不是 BOSS）|
 | `/dspawn 僵尸` | 1 只僵尸，刷在配置的默认目标附近（默认随机在线玩家） |
 | `/dspawn 僵尸 3` | 3 只 |
-| `/dspawn 僵尸 3 饺子喵喵` | 3 只，刷在「饺子喵喵」附近（±14 格水平、±6 格垂直里找空地） |
+| `/dspawn 僵尸 3 示例玩家` | 3 只，刷在「示例玩家」附近（±14 格水平、±6 格垂直里找空地） |
 | `/dspawn 僵尸 3 @spawn` | 刷在世界出生点 |
-| `/dspawn 僵尸 3 饺子喵喵 @白嫖怪` | 末尾 `@观众名` 只用于全服播报，不参与玩家匹配 |
+| `/dspawn 僵尸 3 示例玩家 @白嫖怪` | 末尾 `@观众名` 只用于全服播报，不参与玩家匹配 |
 | `/dspawn Blue Slime 2` | 英文正式名也行，带空格的怪名最多吃 3 个分词 |
 | `/dspawn 46` | 数字 ID 也行 |
 
@@ -112,7 +112,7 @@ docker logs --tail 40 tshock | grep DanmakuSpawn
 ```bash
 TOKEN=$(cat ~/terraria/.rest_token)
 curl --get --data-urlencode "token=$TOKEN" \
-     --data-urlencode "cmd=/dspawn 僵尸 3 饺子喵喵 @白嫖怪" \
+     --data-urlencode "cmd=/dspawn 僵尸 3 示例玩家 @白嫖怪" \
      http://127.0.0.1:7878/v3/server/rawcmd
 ```
 

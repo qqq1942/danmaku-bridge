@@ -1,0 +1,32 @@
+# ═══════════ 看门狗配置模板 ═══════════
+# 复制为 watchdog.conf 后按需修改；watchdog.conf 含密钥，不要提交到 git。
+#   cp ops/watchdog.conf.example ~/terraria/watchdog.conf
+
+# ── 容器 ──
+CONTAINER="tshock"
+COMPOSE_DIR="$HOME/terraria"
+REST_PORT=7878
+
+# ── 自愈 ──
+LOG_MAX_LINES=3000
+MAX_RESTARTS_PER_HOUR=3        # 一小时内最多自动重启几次
+LEAK_THRESHOLD=18              # CLOSE_WAIT 僵尸连接超过这个数就预防性重启
+WORLD_STALE_MIN=25             # 自动备份比存档新这么多分钟就告警（存档没落盘）
+
+# ── QQ 通知（NapCat）──
+NOTIFY_ENABLE=0                # 1 开启；填好下面几项再打开
+NAPCAT_CONTAINER="napcat"
+NAPCAT_HTTP_PORT=3000
+NAPCAT_TOKEN=""                # ← 你的 NapCat token
+QQ_TARGET=""                   # ← 接收通知的 QQ 号（私聊）
+QQ_GROUP=""                    # ← 填了群号就发群
+
+# ── 公网入口探测 ──
+EXT_CHECK_ENABLE=0             # 1 开启
+EXT_HOST=""                    # ← 你的域名，如 example.com
+EXT_PORT=""                    # ← 对外映射的端口
+EXT_NODES=3
+EXT_REALERT_HOURS=6
+
+# ── 告警文案里的局域网地址（可选）──
+LAN_ENDPOINT=""                # 如 192.168.1.100:7777

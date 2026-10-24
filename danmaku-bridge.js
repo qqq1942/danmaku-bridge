@@ -263,7 +263,7 @@ const cmdStats = {
 
 /** 清理单个参数：去掉能掺进 TShock 命令行/URL 的字符，限制长度 */
 function cleanToken(raw, maxLen = 24) {
-  // 保留 <>：Terraria 有「<传奇>夏卜卜」这种带尖括号的昵称，去掉就找不到人。
+  // 保留 <>：Terraria 有「<战队>某玩家」这种带尖括号的昵称，去掉就找不到人。
   // 危险字符（分隔符/引号/管道/控制符）仍然清掉。
   return String(raw)
     .replace(/[\\/\u0000-\u001f;&=?#'"`|]/g, '')
@@ -321,7 +321,7 @@ function cmdAllowed(user, guard, medal) {
  *       !刷怪 <怪物> [数量] [玩家]
  *       !刷怪 僵尸          → 1 只僵尸，刷在插件默认目标附近
  *       !刷怪 僵尸 3        → 3 只，刷在默认目标附近
- *       !刷怪 僵尸 3 饺子喵喵 → 3 只，刷在"饺子喵喵"附近
+ *       !刷怪 僵尸 3 示例玩家 → 3 只，刷在"示例玩家"附近
  */
 async function tryCommand(text, user, meta) {
   if (!CMD.enable) return false;
