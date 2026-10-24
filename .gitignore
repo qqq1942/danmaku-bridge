@@ -1,0 +1,11 @@
+# 含密钥，禁止提交
+config.env
+.rest_token
+.napcat_token
+
+# 运行时产物
+*.log
+.bridge.pid
+
+# 依赖
+node_modules/
